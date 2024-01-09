@@ -1,0 +1,1 @@
+SiYuan-Kernel  -wd /mnt/nfs/siyuan-2.12.0-linux/resources/ -workspace /mnt/nfs/test -accessAuthCode ssrkqdj6unz1p3gg -alsologtostderr ./err.log -lang zh_CN -log_dir ./log
