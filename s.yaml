@@ -28,6 +28,7 @@ resources:
       instanceConcurrency: 200 # 据我所知目前最大单实例并发数允许设置为200
       customRuntimeConfig:
         command:
+          - sh
           - bootstrap.sh
         port: 9000
       environmentVariables: #环境变量
