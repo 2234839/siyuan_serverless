@@ -1,20 +1,59 @@
-edition: 1.0.0
-name: siyuan
+edition: 3.0.0
+name: siyuan_serverless
 access: default
-services:
-  framework:
-    component: fc
+
+vars: # 全局变量
+  region: us-east-1 # 部署在哪个地域，国内地域绑定域名需要备案
+  workspace: /data/workspace # 思源工作空间目录，配置成 mountDir相同的，否则函数计算内部的路径是会跟随实例一起销毁的
+  accessAuthCode: ssrkqdj6unz1p3gg # 请务必修改,思源访问鉴权码
+  bucketName: zixu-codes # oss bucketName
+  bucketPath: /workspace # oss 路径
+  endpoint: https://oss-${vars.region}-internal.aliyuncs.com # 如果修改的话注意选内网地址（带internal的），内网流量是不计费的。
+  mountDir: /data/workspace # 挂载路径，没必要改
+
+resources:
+  siyuan_serverless:
+    # 进行构建：s siyuan_serverless build
+    component: fc3
     props:
-      region: cn-hangzhou
-      service:
-        name: serverless-devs-application
-      function:
-        name: siyuan-serverless-8tph
-        description: Initialize
-        runtime: nodejs16
-        handler: d
-        memorySize: 512
-        cpu: 0.3
-        timeout: 60
-        codeUri: ./
-        diskSize: 512
+      region: ${vars.region}
+      functionName: "siyuan"
+      runtime: "custom.debian10"
+      description: "siyuan serverless"
+      timeout: 60
+      memorySize: 320
+      cpu: 0.3
+      diskSize: 512
+      code: ./
+      instanceConcurrency: 200 # 据我所知目前最大单实例并发数只允许设置为200
+      customRuntimeConfig:
+        command:
+          - node
+          - ./dist/server/server_proxy.js
+        port: 9000
+      environmentVariables: #环境变量
+        PATH: /opt/nodejs18/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
+        siyuanArg: -wd ./resources/ -workspace ${vars.workspace} -accessAuthCode ssrkqdj6unz1p3gg -alsologtostderr ./err.log -lang zh_CN -log_dir ${vars.workspace}
+      layers:
+        - acs:fc:${vars.region}:official:layers/Nodejs18/versions/1
+      ossMountConfig:
+        mountPoints:
+          - bucketName: ${vars.bucketName}
+            bucketPath: ${vars.bucketPath}
+            endpoint: ${vars.endpoint}
+            mountDir: ${vars.mountDir}
+            readOnly: false
+      triggers:
+        - triggerName: httpTrigger # 触发器名称
+          triggerType: http # 触发器类型
+          qualifier: LATEST # 触发函数的版本
+          triggerConfig: # 触发器配置
+            authType: anonymous # 鉴权类型，可选值：anonymous、function
+            disableURLInternet: false # 是否禁用公网访问 URL
+            methods: # HTTP 触发器支持的访问方法，可选值：GET、POST、PUT、DELETE、HEAD
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - HEAD
+

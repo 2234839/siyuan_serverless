@@ -60,7 +60,7 @@ var require_stream = __commonJS({
         this.emit("error", err);
       }
     }
-    function createWebSocketStream2(ws2, options) {
+    function createWebSocketStream2(ws, options) {
       let terminateOnDestroy = true;
       const duplex = new Duplex({
         ...options,
@@ -69,73 +69,73 @@ var require_stream = __commonJS({
         objectMode: false,
         writableObjectMode: false
       });
-      ws2.on("message", function message(msg, isBinary) {
+      ws.on("message", function message(msg, isBinary) {
         const data = !isBinary && duplex._readableState.objectMode ? msg.toString() : msg;
         if (!duplex.push(data))
-          ws2.pause();
+          ws.pause();
       });
-      ws2.once("error", function error(err) {
+      ws.once("error", function error(err) {
         if (duplex.destroyed)
           return;
         terminateOnDestroy = false;
         duplex.destroy(err);
       });
-      ws2.once("close", function close() {
+      ws.once("close", function close() {
         if (duplex.destroyed)
           return;
         duplex.push(null);
       });
       duplex._destroy = function(err, callback) {
-        if (ws2.readyState === ws2.CLOSED) {
+        if (ws.readyState === ws.CLOSED) {
           callback(err);
           process.nextTick(emitClose, duplex);
           return;
         }
         let called = false;
-        ws2.once("error", function error(err2) {
+        ws.once("error", function error(err2) {
           called = true;
           callback(err2);
         });
-        ws2.once("close", function close() {
+        ws.once("close", function close() {
           if (!called)
             callback(err);
           process.nextTick(emitClose, duplex);
         });
         if (terminateOnDestroy)
-          ws2.terminate();
+          ws.terminate();
       };
       duplex._final = function(callback) {
-        if (ws2.readyState === ws2.CONNECTING) {
-          ws2.once("open", function open() {
+        if (ws.readyState === ws.CONNECTING) {
+          ws.once("open", function open() {
             duplex._final(callback);
           });
           return;
         }
-        if (ws2._socket === null)
+        if (ws._socket === null)
           return;
-        if (ws2._socket._writableState.finished) {
+        if (ws._socket._writableState.finished) {
           callback();
           if (duplex._readableState.endEmitted)
             duplex.destroy();
         } else {
-          ws2._socket.once("finish", function finish() {
+          ws._socket.once("finish", function finish() {
             callback();
           });
-          ws2.close();
+          ws.close();
         }
       };
       duplex._read = function() {
-        if (ws2.isPaused)
-          ws2.resume();
+        if (ws.isPaused)
+          ws.resume();
       };
       duplex._write = function(chunk, encoding, callback) {
-        if (ws2.readyState === ws2.CONNECTING) {
-          ws2.once("open", function open() {
+        if (ws.readyState === ws.CONNECTING) {
+          ws.once("open", function open() {
             duplex._write(chunk, encoding, callback);
           });
           return;
         }
-        ws2.send(chunk, callback);
+        ws.send(chunk, callback);
       };
       duplex.on("end", duplexOnEnd);
       duplex.on("error", duplexOnError);
@@ -2295,7 +2295,7 @@ var require_websocket = __commonJS({
     var tls = __require("tls");
     var { randomBytes, createHash } = __require("crypto");
     __require("stream");
-    var { URL } = __require("url");
+    var { URL: URL2 } = __require("url");
     var PerMessageDeflate = require_permessage_deflate();
     var Receiver2 = require_receiver();
     var Sender2 = require_sender();
@@ -2802,11 +2802,11 @@ var require_websocket = __commonJS({
         );
       }
       let parsedUrl;
-      if (address instanceof URL) {
+      if (address instanceof URL2) {
         parsedUrl = address;
       } else {
         try {
-          parsedUrl = new URL(address);
+          parsedUrl = new URL2(address);
         } catch (e) {
           throw new SyntaxError(`Invalid URL: ${address}`);
         }
@@ -2945,7 +2945,7 @@ var require_websocket = __commonJS({
           req.abort();
           let addr;
           try {
-            addr = new URL(location, address);
+            addr = new URL2(location, address);
           } catch (e) {
             const err = new SyntaxError(`Invalid URL: ${location}`);
             emitErrorAndClose(websocket, err);
@@ -3533,12 +3533,12 @@ var require_websocket_server = __commonJS({
           "Connection: Upgrade",
           `Sec-WebSocket-Accept: ${digest}`
         ];
-        const ws2 = new this.options.WebSocket(null, void 0, this.options);
+        const ws = new this.options.WebSocket(null, void 0, this.options);
         if (protocols.size) {
           const protocol = this.options.handleProtocols ? this.options.handleProtocols(protocols, req) : protocols.values().next().value;
           if (protocol) {
             headers.push(`Sec-WebSocket-Protocol: ${protocol}`);
-            ws2._protocol = protocol;
+            ws._protocol = protocol;
           }
         }
         if (extensions[PerMessageDeflate.extensionName]) {
@@ -3547,26 +3547,26 @@ var require_websocket_server = __commonJS({
             [PerMessageDeflate.extensionName]: [params]
           });
           headers.push(`Sec-WebSocket-Extensions: ${value}`);
-          ws2._extensions = extensions;
+          ws._extensions = extensions;
         }
         this.emit("headers", headers, req);
         socket.write(headers.concat("\r\n").join("\r\n"));
         socket.removeListener("error", socketOnError);
-        ws2.setSocket(socket, head, {
+        ws.setSocket(socket, head, {
           allowSynchronousEvents: this.options.allowSynchronousEvents,
           maxPayload: this.options.maxPayload,
           skipUTF8Validation: this.options.skipUTF8Validation
         });
         if (this.clients) {
-          this.clients.add(ws2);
-          ws2.on("close", () => {
-            this.clients.delete(ws2);
+          this.clients.add(ws);
+          ws.on("close", () => {
+            this.clients.delete(ws);
             if (this._shouldEmitClose && !this.clients.size) {
               process.nextTick(emitClose, this);
             }
           });
         }
-        cb(ws2, req);
+        cb(ws, req);
       }
     };
     module.exports = WebSocketServer2;
@@ -3619,43 +3619,107 @@ __toESM(require_sender(), 1);
 var import_websocket = __toESM(require_websocket(), 1);
 __toESM(require_websocket_server(), 1);
 var wrapper_default = import_websocket.default;
-var ws;
-var reqId = 1;
-var proxy = http__default.default.createServer(async (req, res) => {
-  console.log(req.url);
-  const isRootHtml = req.url?.startsWith("/stage/build/desktop/") || req.url?.startsWith("/ocean_press_siyuan_proxy.js");
-  if (req.headers.cookie) {
-    if (!ws) {
-      ws = new wrapper_default("ws://127.0.0.1:6806/ws", {
-        headers: req.headers
-      });
-      ws.addEventListener("open", (ev) => {
-        console.log("open");
-        setInterval(() => {
-          ws.send(
-            JSON.stringify({
-              cmd: "ping",
-              reqId,
-              param: {}
-            })
-          );
-        }, 5e3);
-      });
-      ws.addEventListener("message", (ev) => {
-      });
-      ws.addEventListener("error", (ev) => {
-      });
+var kernelHOST = "127.0.0.1";
+var kernelPort = 6806;
+var port = 9e3;
+var id_ws = /* @__PURE__ */ new Map();
+var cookie_id = {};
+var kernelStartStatus = false;
+var kernelStartStatus_p = new Promise(async (r) => {
+  while (1) {
+    await sleep(5);
+    if (kernelStartStatus) {
+      break;
     }
   }
+  r(true);
+});
+var proxy = http__default.default.createServer(async (req, res) => {
+  await kernelStartStatus_p;
+  const isRootHtml = req.url?.startsWith("/stage/build/desktop/") || req.url?.startsWith("/ocean_press_siyuan_proxy.js");
+  const url = new URL(`http://${kernelHOST}:${kernelPort}${req.url}`);
   if (req.url?.startsWith("/ocean_press_siyuan_proxy.js")) {
     const script = await promises.readFile("./dist/client/client_proxy.global.js", "utf-8");
     res.end(script);
     return;
   }
+  if (req.url?.startsWith("/siyuan_serverless_api")) {
+    let sendEvent2 = function(e) {
+      res.end(JSON.stringify(e));
+    };
+    const event = await new Promise((r) => {
+      let body = "";
+      req.on("data", (data) => body += data);
+      req.on("end", () => r(JSON.parse(body)));
+    });
+    const reqId = event.reqId;
+    const cookie = req.headers.cookie;
+    if (!cookie) {
+      throw "\u6CA1\u6709\u4F20\u9012\u6B63\u786E\u7684 cookie";
+    }
+    if (cookie_id[cookie] === void 0) {
+      cookie_id[cookie] = /* @__PURE__ */ new Set();
+    }
+    cookie_id[cookie].add(reqId);
+    if (event.type == "open") {
+      const path = event.path.split("/ws");
+      path.shift();
+      const wsPath = `ws://${kernelHOST}:${kernelPort}/ws${path.join("")}`;
+      const ws = new wrapper_default(wsPath, {
+        headers: { cookie }
+      });
+      id_ws.get(reqId)?.ws.close();
+      id_ws.set(reqId, { ws, msg: [] });
+      ws.addEventListener("open", (ev) => {
+        console.log("open", wsPath);
+        setInterval(() => {
+          ws.send(
+            JSON.stringify({
+              cmd: "ping",
+              reqId: Date.now(),
+              param: {}
+            })
+          );
+        }, 1e3);
+        sendEvent2(event);
+      });
+      ws.addEventListener("message", (ev) => {
+        const msg = id_ws.get(reqId).msg;
+        msg.push(ev.data);
+      });
+      ws.addEventListener("error", (ev) => {
+        console.log("error", ev.message);
+      });
+      ws.addEventListener("close", (ev) => {
+        console.log("close", ev.reason);
+      });
+    } else if (event.type == "sync") {
+      const loginIds = event.ids?.filter((id) => !id_ws.has(id)) ?? [];
+      Object.keys(event.msgs).forEach((reqId2) => {
+        const ws = id_ws.get(reqId2)?.ws;
+        if (!ws) {
+          console.error("\u672A\u767B\u5F55\u7684\u5BA2\u6237\u7AEF\u53D1\u9001\u4E86\u4FE1\u606F", reqId2);
+          return;
+        }
+        const msg = event.msgs[reqId2];
+        msg.forEach((data) => ws.send(data));
+      });
+      const msgs = {};
+      event.ids.filter((id) => id_ws.has(id)).forEach((reqId2) => {
+        const msg = id_ws.get(reqId2).msg;
+        id_ws.get(reqId2).msg = [];
+        msgs[reqId2] = msg;
+        if (msg.length > 0)
+          console.log(`${reqId2} \u540C\u6B65 ${msg.length} \u6761\u6D88\u606F`);
+      });
+      sendEvent2({ type: "sync", msgs, ids: loginIds });
+    }
+    return;
+  }
   const proxyReq = http__default.default.request(
     {
-      host: "127.0.0.1",
-      port: 6806,
+      host: kernelHOST,
+      port: kernelPort,
       path: req.url,
       method: req.method,
       headers: {
@@ -3664,57 +3728,63 @@ var proxy = http__default.default.createServer(async (req, res) => {
       }
     },
     async (proxyRes) => {
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      if (req.url?.startsWith("/stage/build/desktop/")) {
-        console.log("============");
+      if (url.pathname === "/stage/build/desktop/") {
         let body = "";
         proxyRes.addListener("data", (chunk) => {
           body += chunk;
         });
         proxyRes.addListener("end", () => {
-          res.end(
-            body.replace(/<script/, `<script src="/ocean_press_siyuan_proxy.js"></script><script`)
-          );
+          const i = body.indexOf("<script");
+          const p = body.substring(0, i);
+          const n = body.substring(i);
+          const newHtml = p + `<script defer="defer" src="/ocean_press_siyuan_proxy.js"></script>` + n;
+          res.writeHead(proxyRes.statusCode, {
+            ...proxyRes.headers,
+            "content-length": newHtml.length
+          });
+          res.end(newHtml);
         });
       } else {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
       }
     }
   );
   proxyReq.on("error", (err) => {
-    res.writeHead(500, "\u65E0\u6CD5\u8FDE\u63A5\u601D\u6E90\u6838\u5FC3");
+    res.writeHead(500);
     res.end(err.message);
   });
   req.pipe(proxyReq);
 });
-var port = 9e3;
-proxy.listen(port, () => {
-  console.log(`Proxy server is running on port ${port}`);
+kernelStartStatus_p.then(() => {
+  proxy.listen(port, () => {
+    console.log(`Proxy server is running on port ${port}`);
+  });
 });
-var programPath = "./resources/kernel/SiYuan-Kernel";
-var workingDirectory = "/code/";
-var childProcess = child_process.spawn(
-  programPath,
-  process.env.siyuanArg ? process.env.siyuanArg.split(" ") : [
-    "-wd",
-    "./resources/",
-    "-workspace",
-    "/data/wd",
-    "-lang",
-    "zh_CN",
-    "-accessAuthCode",
-    "ssrkqdj6unz1p3gg",
-    "-alsologtostderr",
-    "./err.log",
-    "-log_dir",
-    "/data/wd"
-  ],
-  {
-    cwd: workingDirectory
+var programPath = `./resources/kernel/SiYuan-Kernel`;
+var workingDirectory = "./";
+var siyuanArg = process.env.siyuanArg;
+if (!siyuanArg)
+  throw "\u8BF7\u8BBE\u7F6E\u601D\u6E90\u542F\u52A8\u53C2\u6570";
+var childProcess = child_process.spawn(programPath, siyuanArg.split(" "), {
+  cwd: workingDirectory
+});
+function log(data) {
+  const t = data.toString();
+  const reg = /kernel \[pid=(\d+)\] http server \[(.+):(\d+)] is booting/;
+  if (!kernelStartStatus && reg.test(t)) {
+    kernelStartStatus = true;
+    const [_, _pid, host, port2] = t.match(reg);
+    kernelHOST = host;
   }
-);
-childProcess.stdout.on("data", (data) => console.log(data.toString()));
-childProcess.stderr.on("data", (data) => console.error(data.toString()));
+  console.log(t);
+}
+childProcess.stdout.on("data", log);
+childProcess.stderr.on("data", log);
 childProcess.on("exit", (code, signal) => {
   console.log(`\u5B50\u8FDB\u7A0B\u9000\u51FA\uFF0C\u9000\u51FA\u7801\uFF1A${code}`);
+  process.exit(code ?? 0);
 });
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

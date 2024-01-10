@@ -1,1 +1,5 @@
 /node_modules
+/resources/kernel/SiYuan-Kernel.exe
+/test/*
+/dist
+/.s
