@@ -25,11 +25,10 @@ resources:
       cpu: 0.3
       diskSize: 512
       code: ./
-      instanceConcurrency: 200 # 据我所知目前最大单实例并发数只允许设置为200
+      instanceConcurrency: 200 # 据我所知目前最大单实例并发数允许设置为200
       customRuntimeConfig:
         command:
-          - node
-          - ./dist/server/server_proxy.js
+          - bootstrap.sh
         port: 9000
       environmentVariables: #环境变量
         PATH: /opt/nodejs18/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
