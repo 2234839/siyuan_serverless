@@ -46,11 +46,6 @@ async function loop() {
 (async () => {
   while (1) {
     await sleep(1_100);
-    if (!document.getElementById("message")) {
-      console.log("no!");
-
-      continue;
-    }
     try {
       await loop();
     } catch (error) {
