@@ -8,6 +8,7 @@
 
 
 ### 使用 cloudstudio
+[![Cloud Studio Template](https://cs-res.codehub.cn/common/assets/icon-badge.svg)](https://cloudstudio.net/templates/52xjl3c78qo)
 
 ### 从阿里云应用中心（推荐）
 
