@@ -8,9 +8,9 @@
 
 
 ### 使用 cloudstudio
-ide.cloud.tencent.com (推荐) : [![Cloud Studio Template](https://cs-res.codehub.cn/common/assets/icon-badge.svg)](https://ide.cloud.tencent.com/templates/52xp20mfy0w)
+ide.cloud.tencent.com: [![Cloud Studio Template](https://cs-res.codehub.cn/common/assets/icon-badge.svg)](https://ide.cloud.tencent.com/templates/52xp20mfy0w)
 
-cloudstudio.net: [![Cloud Studio Template](https://cs-res.codehub.cn/common/assets/icon-badge.svg)](https://cloudstudio.net/templates/52xjl3c78qo)
+cloudstudio.net: [![Cloud Studio Template](https://cs-res.codehub.cn/common/assets/icon-badge.svg)](https://cloudstudio.net/templates/52xvcorqps0)
 
 
 
