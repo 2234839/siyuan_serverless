@@ -6,6 +6,11 @@
 
 ## 部署方式
 
+
+### 使用 cloudstudio（推荐）
+
+https://cloudstudio.net/a/18577981201756160
+
 ### 从阿里云应用中心（推荐）
 
 ### 使用 serverless-devs/s3
